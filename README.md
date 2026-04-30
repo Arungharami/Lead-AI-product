@@ -1,6 +1,12 @@
+## lead-ai-mobile
+
 # Lead.AI — AI Lead Capture Assistant (MVP)
 
 Production-ready MVP with Flutter frontend + FastAPI backend + Firebase + OpenAI.
+
+**Description:** AI lead capture assistant mobile app using Flutter, FastAPI, Firebase, and OpenAI.
+
+**Suggested visibility:** Public or Private.
 
 ## Architecture
 - `frontend/`: Flutter Android-first app
