@@ -45,3 +45,19 @@ cd frontend
 flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
+
+
+## Git project / GitHub repo setup
+This folder is already a Git project. To create and connect a GitHub repository:
+
+```bash
+./scripts/create_github_repo.sh lead-ai-mobile private
+# or
+./scripts/create_github_repo.sh lead-ai-mobile public
+```
+
+Then push:
+
+```bash
+git push -u origin main
+```
