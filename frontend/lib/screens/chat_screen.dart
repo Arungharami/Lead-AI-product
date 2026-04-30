@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/app_config.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -10,7 +11,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final api = ApiService(const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000'));
+  final api = ApiService(AppConfig.apiBaseUrl);
   final ctrl = TextEditingController();
   final messages = <String>['AI: What is your full name?'];
   Map<String, dynamic> state = {};

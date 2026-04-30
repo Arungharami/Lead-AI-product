@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/lead.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/app_config.dart';
 import 'lead_detail_screen.dart';
 
 class LeadsScreen extends StatelessWidget {
@@ -10,7 +11,7 @@ class LeadsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final api = ApiService(const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000'));
+    final api = ApiService(AppConfig.apiBaseUrl);
     return Scaffold(
       appBar: AppBar(title: const Text('Leads')),
       body: FutureBuilder<List<Lead>>(
