@@ -66,3 +66,20 @@ git push -u origin main
 
 ### OpenAI setup
 Set `OPENAI_API_KEY` in `backend/.env` to enable AI lead-capture responses.\nIf missing, `/chat` returns a safe fallback prompt.
+
+
+## Mobile testing (Android emulator)
+1. Start backend:
+   ```bash
+   cd backend
+   source venv/bin/activate  # or .venv/bin/activate
+   uvicorn main:app --reload
+   ```
+2. Run Flutter app:
+   ```bash
+   cd frontend
+   flutter pub get
+   flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+   ```
+3. Open **AI Chat** tab, send a message, confirm assistant reply, and if `lead_detected=true` tap **Save Lead**.
+4. Open **Leads** tab to verify saved lead appears.
