@@ -10,6 +10,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+# add OPENAI_API_KEY in .env
 uvicorn main:app --reload
 ```
 
@@ -61,3 +62,7 @@ Then push:
 ```bash
 git push -u origin main
 ```
+
+
+### OpenAI setup
+Set `OPENAI_API_KEY` in `backend/.env` to enable AI lead-capture responses.\nIf missing, `/chat` returns a safe fallback prompt.

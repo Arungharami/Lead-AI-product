@@ -1,13 +1,18 @@
+import json
+import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List
 from uuid import uuid4
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr, Field
+from openai import OpenAI
+from pydantic import BaseModel, EmailStr
 
-app = FastAPI(title="Lead.AI Backend MVP", version="1.0.0")
+load_dotenv()
 
+app = FastAPI(title="Lead.AI Backend MVP", version="1.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,13 +26,19 @@ LEADS: List[Dict[str, str]] = []
 
 class ChatRequest(BaseModel):
     message: str
-    state: Dict[str, Optional[str]] = Field(default_factory=dict)
+
+
+class LeadData(BaseModel):
+    name: str = ""
+    phone: str = ""
+    email: str = ""
+    need: str = ""
 
 
 class ChatResponse(BaseModel):
     reply: str
-    state: Dict[str, Optional[str]]
-    complete: bool
+    lead_detected: bool
+    lead: LeadData
 
 
 class LeadIn(BaseModel):
@@ -43,29 +54,12 @@ class LeadOut(LeadIn):
     created_at: str
 
 
-FIELDS = ["name", "phone", "email", "need"]
-PROMPTS = {
-    "name": "What is your full name?",
-    "phone": "What is your phone number?",
-    "email": "What is your email address?",
-    "need": "What business need can we help with?",
-}
-
-
-def next_missing(state: Dict[str, Optional[str]]) -> Optional[str]:
-    for field in FIELDS:
-        if not state.get(field):
-            return field
-    return None
-
-
 def get_user_id(authorization: str = "") -> str:
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
     token = authorization.split(" ", 1)[1].strip()
     if not token:
         raise HTTPException(status_code=401, detail="Empty token")
-    # MVP in-memory auth: treat token as user id
     return token
 
 
@@ -76,16 +70,53 @@ def root():
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    state = dict(req.state)
-    field = next_missing(state)
-    if field and req.message.strip():
-        state[field] = req.message.strip()
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        return ChatResponse(
+            reply="Hello! I can help capture a lead. Please share name, phone, email, and business need.",
+            lead_detected=False,
+            lead=LeadData(),
+        )
 
-    missing = next_missing(state)
-    if missing:
-        return ChatResponse(reply=PROMPTS[missing], state=state, complete=False)
+    client = OpenAI(api_key=api_key)
+    system_prompt = (
+        "You are a professional AI lead-capture assistant for small businesses. "
+        "Collect name, phone, email, and business need. "
+        "Return ONLY valid JSON with keys: reply, lead_detected, lead. "
+        "lead must include: name, phone, email, need. "
+        "If any field is missing, set it to empty string and keep lead_detected=false."
+    )
 
-    return ChatResponse(reply="Thanks! I captured your details. Tap Save Lead.", state=state, complete=True)
+    completion = client.chat.completions.create(
+        model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+        temperature=0.2,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": req.message},
+        ],
+    )
+    content = completion.choices[0].message.content or "{}"
+
+    try:
+        parsed = json.loads(content)
+        lead_payload = parsed.get("lead", {})
+        return ChatResponse(
+            reply=str(parsed.get("reply", "Please share your name, phone, email, and business need.")),
+            lead_detected=bool(parsed.get("lead_detected", False)),
+            lead=LeadData(
+                name=str(lead_payload.get("name", "") or ""),
+                phone=str(lead_payload.get("phone", "") or ""),
+                email=str(lead_payload.get("email", "") or ""),
+                need=str(lead_payload.get("need", "") or ""),
+            ),
+        )
+    except Exception:
+        return ChatResponse(
+            reply="Please share your name, phone, email, and business need.",
+            lead_detected=False,
+            lead=LeadData(),
+        )
 
 
 @app.post("/lead", response_model=LeadOut)
