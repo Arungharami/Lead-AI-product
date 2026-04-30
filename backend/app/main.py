@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -9,7 +10,7 @@ from firebase_admin import auth, credentials, firestore, initialize_app
 from openai import OpenAI
 from pydantic import BaseModel, EmailStr, Field
 
-app = FastAPI(title="Lead.AI API", version="1.0.0")
+app = FastAPI(title="Lead.AI API", version="1.0.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,15 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-firebase_cred_path = os.getenv("FIREBASE_CREDENTIALS")
-if not firebase_cred_path:
-    raise RuntimeError("FIREBASE_CREDENTIALS is required")
-
-cred = credentials.Certificate(firebase_cred_path)
-initialize_app(cred)
-db = firestore.client()
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 class ChatRequest(BaseModel):
@@ -53,6 +45,40 @@ class LeadOut(LeadIn):
     created_at: str
 
 
+FIELDS = ["name", "phone", "email", "need"]
+PROMPTS = {
+    "name": "What is your full name?",
+    "phone": "What is your phone number?",
+    "email": "What is your email address?",
+    "need": "What business need can we help with?",
+}
+
+
+@lru_cache(maxsize=1)
+def get_db():
+    firebase_cred_path = os.getenv("FIREBASE_CREDENTIALS")
+    if not firebase_cred_path:
+        raise HTTPException(status_code=500, detail="FIREBASE_CREDENTIALS is not configured")
+    if not os.path.exists(firebase_cred_path):
+        raise HTTPException(status_code=500, detail="Firebase credentials file not found")
+
+    cred = credentials.Certificate(firebase_cred_path)
+    try:
+        initialize_app(cred)
+    except ValueError:
+        # already initialized
+        pass
+    return firestore.client()
+
+
+@lru_cache(maxsize=1)
+def get_openai_client() -> OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+    return OpenAI(api_key=api_key)
+
+
 def get_user_id(token: str) -> str:
     try:
         decoded = auth.verify_id_token(token)
@@ -68,20 +94,16 @@ def user_from_auth_header(authorization: str = Header(default="")) -> str:
     return get_user_id(token)
 
 
-FIELDS = ["name", "phone", "email", "need"]
-PROMPTS = {
-    "name": "What is your full name?",
-    "phone": "What is your phone number?",
-    "email": "What is your email address?",
-    "need": "What business need can we help with?",
-}
-
-
 def next_missing(state: Dict[str, Optional[str]]) -> Optional[str]:
     for field in FIELDS:
         if not state.get(field):
             return field
     return None
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -90,12 +112,11 @@ def chat(req: ChatRequest):
     missing_before = next_missing(state)
 
     if missing_before:
-        # Let the model parse latest user answer into the missing field.
         system = (
             "You are a lead capture assistant. Return JSON only with keys: "
             "name, phone, email, need. Fill only values you can infer confidently, else null."
         )
-        completion = openai_client.chat.completions.create(
+        completion = get_openai_client().chat.completions.create(
             model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
             temperature=0,
             response_format={"type": "json_object"},
@@ -103,7 +124,7 @@ def chat(req: ChatRequest):
                 {"role": "system", "content": system},
                 {
                     "role": "user",
-                    "content": f"Current state: {json.dumps(state)}\\nUser message: {req.message}",
+                    "content": f"Current state: {json.dumps(state)}\nUser message: {req.message}",
                 },
             ],
         )
@@ -116,11 +137,11 @@ def chat(req: ChatRequest):
     if missing_after:
         return ChatResponse(reply=PROMPTS[missing_after], state=state, complete=False)
 
-    reply = (
-        "Great, I captured your details. We will contact you soon. "
-        "Tap Save Lead to store this lead."
+    return ChatResponse(
+        reply="Great, I captured your details. We will contact you soon. Tap Save Lead to store this lead.",
+        state=state,
+        complete=True,
     )
-    return ChatResponse(reply=reply, state=state, complete=True)
 
 
 @app.post("/lead", response_model=LeadOut)
@@ -128,7 +149,7 @@ def create_lead(lead: LeadIn, user_id: str = Depends(user_from_auth_header)):
     data = lead.model_dump()
     data["user_id"] = user_id
     data["created_at"] = datetime.now(timezone.utc).isoformat()
-    ref = db.collection("leads").document()
+    ref = get_db().collection("leads").document()
     ref.set(data)
     return LeadOut(id=ref.id, **data)
 
@@ -136,7 +157,8 @@ def create_lead(lead: LeadIn, user_id: str = Depends(user_from_auth_header)):
 @app.get("/leads", response_model=List[LeadOut])
 def get_leads(user_id: str = Depends(user_from_auth_header)):
     docs = (
-        db.collection("leads")
+        get_db()
+        .collection("leads")
         .where("user_id", "==", user_id)
         .order_by("created_at", direction=firestore.Query.DESCENDING)
         .stream()
