@@ -1,55 +1,59 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/api_service.dart';
-import '../services/auth_service.dart';
 import '../services/app_config.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
   final api = ApiService(AppConfig.apiBaseUrl);
-  final ctrl = TextEditingController();
-  final messages = <String>['AI: What is your full name?'];
+  final text = TextEditingController();
+  final msgs = <String>['AI: What is your full name?'];
   Map<String, dynamic> state = {};
-  bool complete = false;
+  bool loading = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('AI Lead Chat')),
-      body: Column(children: [
-        Expanded(child: ListView(children: messages.map((m) => ListTile(title: Text(m))).toList())),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(children: [Expanded(child: TextField(controller: ctrl)), IconButton(onPressed: _send, icon: const Icon(Icons.send))]),
-        ),
-        if (complete)
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(onPressed: () async {
-              final token = await context.read<AuthService>().idToken();
-              await api.saveLead(state, token);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lead saved')));
-            }, child: const Text('Save Lead')),
-          )
-      ]),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(children: [
+          const Align(alignment: Alignment.centerLeft, child: Text('AI Chat', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold))),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Card(
+              child: ListView.builder(
+                itemCount: msgs.length,
+                itemBuilder: (_, i) => ListTile(title: Text(msgs[i])),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: TextField(controller: text, decoration: const InputDecoration(hintText: 'Type reply...'))),
+            IconButton(onPressed: loading ? null : _send, icon: const Icon(Icons.send))
+          ])
+        ]),
+      ),
     );
   }
 
   Future<void> _send() async {
-    final text = ctrl.text;
-    ctrl.clear();
-    setState(() => messages.add('You: $text'));
-    final res = await api.chat(text, state);
-    setState(() {
-      state = Map<String, dynamic>.from(res['state']);
-      complete = res['complete'];
-      messages.add('AI: ${res['reply']}');
-    });
+    final input = text.text.trim();
+    if (input.isEmpty) return;
+    text.clear();
+    setState(() { msgs.add('You: $input'); loading = true; });
+    try {
+      final r = await api.chat(input, state);
+      setState(() { state = Map<String, dynamic>.from(r['state']); msgs.add('AI: ${r['reply']}'); });
+    } catch (e) {
+      setState(() => msgs.add('Error: $e'));
+    } finally {
+      setState(() => loading = false);
+    }
   }
 }
