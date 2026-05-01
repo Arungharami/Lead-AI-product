@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../services/api_service.dart';
 import '../services/app_config.dart';
+import '../services/auth_service.dart';
+import '../services/lead_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -12,64 +15,49 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final api = ApiService(AppConfig.apiBaseUrl);
+  final leadService = LeadService();
   final input = TextEditingController();
-  final messages = <_Msg>[];
+  final messages = <_Msg>[const _Msg(text: 'Hi! I am your AI lead-capture assistant. How can I help?', isUser: false)];
   bool isLoading = false;
   bool leadDetected = false;
   Map<String, dynamic> lead = {'name': '', 'phone': '', 'email': '', 'need': ''};
-
-  @override
-  void initState() {
-    super.initState();
-    messages.add(const _Msg(text: 'Hi! I am your AI lead-capture assistant. How can I help?', isUser: false));
-  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Align(alignment: Alignment.centerLeft, child: Text('AI Chat', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold))),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Card(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: messages.length,
-                  itemBuilder: (_, i) => Align(
-                    alignment: messages[i].isUser ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: messages[i].isUser ? const Color(0xFF2563EB) : const Color(0xFF1F2937),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(messages[i].text),
+        child: Column(children: [
+          const Align(alignment: Alignment.centerLeft, child: Text('AI Chat', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold))),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Card(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: messages.length,
+                itemBuilder: (_, i) => Align(
+                  alignment: messages[i].isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: messages[i].isUser ? const Color(0xFF2563EB) : const Color(0xFF1F2937),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Text(messages[i].text),
                   ),
                 ),
               ),
             ),
-            if (isLoading) const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()),
-            if (leadDetected)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveLead,
-                  child: const Text('Save Lead'),
-                ),
-              ),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: input, decoration: const InputDecoration(hintText: 'Type your message'))),
-                IconButton(onPressed: isLoading ? null : _send, icon: const Icon(Icons.send)),
-              ],
-            )
-          ],
-        ),
+          ),
+          if (isLoading) const Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()),
+          if (leadDetected)
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _saveLead, child: const Text('Save Lead'))),
+          Row(children: [
+            Expanded(child: TextField(controller: input, decoration: const InputDecoration(hintText: 'Type your message'))),
+            IconButton(onPressed: isLoading ? null : _send, icon: const Icon(Icons.send)),
+          ])
+        ]),
       ),
     );
   }
@@ -98,10 +86,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _saveLead() async {
+    final userId = context.read<AuthService>().user?.uid;
+    if (userId == null) return;
     try {
-      await api.saveLead(lead, AppConfig.demoToken);
+      await leadService.saveLead(
+        userId: userId,
+        name: (lead['name'] ?? '').toString(),
+        phone: (lead['phone'] ?? '').toString(),
+        email: (lead['email'] ?? '').toString(),
+        need: (lead['need'] ?? '').toString(),
+      );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lead saved successfully')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lead saved to Firestore')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $e')));

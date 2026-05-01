@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/lead.dart';
 
 class LeadDetailScreen extends StatelessWidget {
@@ -8,15 +9,23 @@ class LeadDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(lead.name)),
+      appBar: AppBar(title: const Text('Lead Detail')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Phone: ${lead.phone}'),
-          Text('Email: ${lead.email}'),
-          Text('Need: ${lead.need}'),
-          Text('Captured: ${lead.createdAt}'),
-        ]),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Name: ${lead.name}'),
+              Text('Phone: ${lead.phone}'),
+              Text('Email: ${lead.email}'),
+              Text('Need: ${lead.need}'),
+              Text('Status: ${lead.status}'),
+              Text('Created: ${lead.createdAt.toLocal()}'),
+              Text('UserId: ${lead.userId}'),
+            ]),
+          ),
+        ),
       ),
     );
   }

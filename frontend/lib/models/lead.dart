@@ -4,16 +4,29 @@ class Lead {
   final String phone;
   final String email;
   final String need;
-  final String createdAt;
+  final String status;
+  final DateTime createdAt;
+  final String userId;
 
-  Lead({required this.id, required this.name, required this.phone, required this.email, required this.need, required this.createdAt});
+  Lead({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.email,
+    required this.need,
+    required this.status,
+    required this.createdAt,
+    required this.userId,
+  });
 
-  factory Lead.fromJson(Map<String, dynamic> json) => Lead(
-        id: json['id'],
-        name: json['name'],
-        phone: json['phone'],
-        email: json['email'],
-        need: json['need'],
-        createdAt: json['created_at'],
+  factory Lead.fromMap(String id, Map<String, dynamic> map) => Lead(
+        id: id,
+        name: (map['name'] ?? '').toString(),
+        phone: (map['phone'] ?? '').toString(),
+        email: (map['email'] ?? '').toString(),
+        need: (map['need'] ?? '').toString(),
+        status: (map['status'] ?? 'new').toString(),
+        createdAt: DateTime.tryParse((map['createdAt'] ?? '').toString()) ?? DateTime.now(),
+        userId: (map['userId'] ?? '').toString(),
       );
 }
