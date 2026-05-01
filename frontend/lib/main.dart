@@ -25,6 +25,7 @@ class LeadAiApp extends StatelessWidget {
       create: (_) => AuthService(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        title: 'Lead AI Mobile',
         theme: ThemeData.dark(useMaterial3: true).copyWith(
           scaffoldBackgroundColor: const Color(0xFF0B1220),
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3B82F6), brightness: Brightness.dark),
