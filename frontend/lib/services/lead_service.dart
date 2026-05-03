@@ -30,4 +30,11 @@ class LeadService {
         .snapshots()
         .map((snap) => snap.docs.map((d) => Lead.fromMap(d.id, d.data())).toList());
   }
+
+  Future<void> updateLeadStatus({
+    required String leadId,
+    required String status,
+  }) async {
+    await _db.collection('leads').doc(leadId).update({'status': status});
+  }
 }

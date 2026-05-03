@@ -36,8 +36,14 @@ class LeadsScreen extends StatelessWidget {
                   itemBuilder: (_, i) => Card(
                     child: ListTile(
                       title: Text(leads[i].name),
-                      subtitle: Text('${leads[i].need} • ${leads[i].status}'),
-                      trailing: const Icon(Icons.chevron_right),
+                      subtitle: Text(leads[i].need),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Chip(label: Text(leads[i].status)),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LeadDetailScreen(lead: leads[i]))),
                     ),
                   ),
