@@ -26,7 +26,7 @@ export const ProductDetails = () => {
 
 export const Pricing = () => <div className='grid gap-4 md:grid-cols-3'>{pricing.map((p) => <div key={p.name} className='glass rounded-2xl p-5'><h3 className='text-xl font-semibold'>{p.name}</h3><p className='my-3 text-3xl font-bold'>{p.price}</p><ul className='space-y-1 text-slate-300'>{p.features.map((f) => <li key={f}>• {f}</li>)}</ul><button className='mt-4 rounded-lg bg-blue-500 px-4 py-2'>{p.cta}</button></div>)}</div>;
 
-export const Dashboard = () => <div className='grid gap-4 md:grid-cols-4'>{['Active AI tools: 8', 'Monthly conversations: 4,280', 'Leads captured: 612', 'Conversion rate: 16.8%', 'AI usage: 72%', 'Billing status: Active', 'Recent orders: 14', 'Model/demo access: 6'].map((v) => <div key={v} className='glass rounded-xl p-4'>{v}</div>)}</div>;
+export const Dashboard = () => <div className='grid gap-4 md:grid-cols-4'>{['MRR: $48,700', 'New signups: 128', 'Churn rate: 2.1%', 'Active users: 3,942', 'Leads generated: 2,406', 'Demo bookings: 74', 'Conversion rate: 16.8%'].map((v) => <div key={v} className='glass rounded-xl p-4'>{v}</div>)}</div>;
 
 export const Billing = () => <Section t='Billing' d='Current plan: Growth. Next invoice: $99 on June 1, 2026. Payment method: Visa •••• 4242. Auto-renew: Enabled.' />;
 export const Orders = () => <Section t='Orders' d='Recent orders include WhatsApp AI Bot provisioning, model access approvals, and analytics add-on activation.' />;
