@@ -15,8 +15,14 @@ class LeadsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Leads')),
       body: FutureBuilder<List<Lead>>(
-        future: context.read<AuthService>().idToken().then((t) => api.getLeads(t)),
+        future: context.read<AuthService>().idToken().then((token) {
+          if (token == null) {
+            throw Exception('Session expired. Please sign in again.');
+          }
+          return api.getLeads(token);
+        }),
         builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Could not load leads: ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final leads = snapshot.data!;
           if (leads.isEmpty) return const Center(child: Text('No leads yet'));

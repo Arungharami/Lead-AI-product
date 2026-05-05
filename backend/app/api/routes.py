@@ -2,11 +2,12 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from firebase_admin import firestore
 
 from app.schemas.lead import ChatRequest, ChatResponse, LeadIn, LeadOut
 from app.services.deps import get_db, get_openai_client, user_from_auth_header
+from app.core.config import settings
 
 router = APIRouter()
 FIELDS = ["name", "phone", "email", "need"]
@@ -32,7 +33,7 @@ def chat(req: ChatRequest):
     state = dict(req.state)
     if next_missing(state):
         completion = get_openai_client().chat.completions.create(
-            model='gpt-4.1-mini',
+            model=settings.openai_model,
             temperature=0,
             response_format={'type': 'json_object'},
             messages=[
@@ -40,7 +41,15 @@ def chat(req: ChatRequest):
                 {'role': 'user', 'content': f"Current state: {json.dumps(state)}\nUser message: {req.message}"},
             ],
         )
-        parsed = json.loads(completion.choices[0].message.content)
+        try:
+            raw_output = completion.choices[0].message.content
+            parsed = json.loads(raw_output)
+        except (IndexError, AttributeError, json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=502, detail="Unexpected OpenAI response") from exc
+
+        if not isinstance(parsed, dict):
+            raise HTTPException(status_code=502, detail="OpenAI response did not return a JSON object")
+
         for k in FIELDS:
             if parsed.get(k) and not state.get(k):
                 state[k] = str(parsed[k]).strip()

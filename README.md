@@ -16,6 +16,7 @@ cp .env.example .env
 export $(cat .env | xargs)
 uvicorn app.main:app --reload --port 8000
 ```
+> If you use Python 3.14, the backend requirements are pinned for compatibility (`pydantic==2.13.0`).
 
 ## Frontend Run (Flutter)
 ```bash

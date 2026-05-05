@@ -32,9 +32,19 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(onPressed: () async {
               final token = await context.read<AuthService>().idToken();
-              await api.saveLead(state, token);
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lead saved')));
+              if (token == null) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in required to save lead')));
+                return;
+              }
+              try {
+                await api.saveLead(state, token);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lead saved')));
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Save failed: $error')));
+              }
             }, child: const Text('Save Lead')),
           )
       ]),
@@ -45,11 +55,16 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = ctrl.text;
     ctrl.clear();
     setState(() => messages.add('You: $text'));
-    final res = await api.chat(text, state);
-    setState(() {
-      state = Map<String, dynamic>.from(res['state']);
-      complete = res['complete'];
-      messages.add('AI: ${res['reply']}');
-    });
+    try {
+      final res = await api.chat(text, state);
+      setState(() {
+        state = Map<String, dynamic>.from(res['state']);
+        complete = res['complete'];
+        messages.add('AI: ${res['reply']}');
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chat failed: $error')));
+    }
   }
 }

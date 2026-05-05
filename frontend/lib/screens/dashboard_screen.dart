@@ -19,8 +19,16 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
       body: FutureBuilder<List<Lead>>(
-        future: context.read<AuthService>().idToken().then((t) => api.getLeads(t)),
+        future: context.read<AuthService>().idToken().then((token) {
+          if (token == null) {
+            throw Exception('Session expired. Please sign in again.');
+          }
+          return api.getLeads(token);
+        }),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Could not load analytics: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent)));
+          }
           final leads = snapshot.data ?? [];
           final todaysLeads = leads.where((l) {
             final d = DateTime.tryParse(l.createdAt)?.toLocal();
@@ -46,10 +54,6 @@ class DashboardScreen extends StatelessWidget {
               ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen())), child: const Text('Open AI Chat')),
               ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeadsScreen())), child: const Text('View Leads')),
               OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen())), child: const Text('Subscription')),
-              if (snapshot.hasError) Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text('Could not load analytics: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent)),
-              ),
             ]),
           );
         },

@@ -15,5 +15,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> idToken() async => await user!.getIdToken() ?? '';
+  Future<String?> idToken() async {
+    return _auth.currentUser?.getIdToken();
+  }
 }
