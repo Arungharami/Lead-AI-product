@@ -6,6 +6,7 @@ import '../services/app_config.dart';
 import '../services/auth_service.dart';
 import 'chat_screen.dart';
 import 'leads_screen.dart';
+import 'login_screen.dart';
 import 'subscription_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -15,9 +16,27 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final api = ApiService(AppConfig.apiBaseUrl);
     final today = DateTime.now();
+    final auth = context.read<AuthService>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign out',
+            onPressed: () async {
+              await auth.logout();
+              if (!context.mounted) return;
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+            },
+          ),
+        ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text('Signed in as ${auth.user?.email ?? 'unknown'}', textAlign: TextAlign.center),
+      ),
       body: FutureBuilder<List<Lead>>(
         future: context.read<AuthService>().idToken().then((token) {
           if (token == null) {

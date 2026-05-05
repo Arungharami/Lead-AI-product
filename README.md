@@ -25,6 +25,16 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
+## Production / Google Play Store
+- Configure Android Firebase by placing `google-services.json` into `android/app/`.
+- Set `API_BASE_URL` to your production backend URL.
+- Run `flutter pub get` and then build a release bundle:
+  ```bash
+  flutter build appbundle --dart-define=API_BASE_URL=https://api.yourdomain.com
+  ```
+- Upload the generated `build/app/outputs/bundle/release/app.aab` to Google Play Console.
+- Test the release build on internal testing before publishing.
+
 ## Firebase Setup (Required)
 1. Enable Firebase Email/Password auth.
 2. Enable Firestore.
