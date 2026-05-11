@@ -1,91 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../models/lead.dart';
+import '../services/api_service.dart';
+import '../services/app_config.dart';
 import '../services/auth_service.dart';
-import '../services/lead_service.dart';
+import 'chat_screen.dart';
+import 'leads_screen.dart';
+import 'subscription_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userId = context.watch<AuthService>().user?.uid;
-    final leadService = LeadService();
+    final api = ApiService(AppConfig.apiBaseUrl);
+    final today = DateTime.now();
 
-    Widget metric(String title, String value) => Expanded(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(title, style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 8),
-                Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Dashboard')),
+      body: FutureBuilder<List<Lead>>(
+        future: context.read<AuthService>().idToken().then((t) => api.getLeads(t)),
+        builder: (context, snapshot) {
+          final leads = snapshot.data ?? [];
+          final todaysLeads = leads.where((l) {
+            final d = DateTime.tryParse(l.createdAt)?.toLocal();
+            return d != null && d.year == today.year && d.month == today.month && d.day == today.day;
+          }).length;
+
+          Widget card(String t, String v) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(children: [Text(t), Text(v, style: const TextStyle(fontSize: 24))]),
+                ),
+              );
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              Row(children: [
+                Expanded(child: card('Total Leads', '${leads.length}')),
+                const SizedBox(width: 12),
+                Expanded(child: card("Today's Leads", '$todaysLeads')),
               ]),
-            ),
-          ),
-        );
-
-    if (userId == null) return const Center(child: Text('Please login'));
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Dashboard', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Expanded(
-            child: StreamBuilder<List<Lead>>(
-              stream: leadService.watchLeads(userId),
-              builder: (context, s) {
-                if (s.connectionState != ConnectionState.active) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (s.hasError) return Center(child: Text('Failed: ${s.error}'));
-
-                final leads = s.data ?? [];
-                final now = DateTime.now();
-                final todayCount = leads.where((l) {
-                  final d = l.createdAt.toLocal();
-                  return d.year == now.year && d.month == now.month && d.day == now.day;
-                }).length;
-
-                final newCount = leads.where((l) => l.status == 'new').length;
-                final contactedCount = leads.where((l) => l.status == 'contacted').length;
-                final convertedCount = leads.where((l) => l.status == 'converted').length;
-
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        metric('Total Leads', '${leads.length}'),
-                        const SizedBox(width: 12),
-                        metric("Today's Leads", '$todayCount'),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        metric('New Leads', '$newCount'),
-                        const SizedBox(width: 12),
-                        metric('Contacted', '$contactedCount'),
-                        const SizedBox(width: 12),
-                        metric('Converted', '$convertedCount'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Card(
-                      child: ListTile(
-                        title: const Text('Lead Funnel'),
-                        subtitle: Text('New: $newCount • Contacted: $contactedCount • Converted: $convertedCount'),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ]),
+              const SizedBox(height: 20),
+              ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen())), child: const Text('Open AI Chat')),
+              ElevatedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeadsScreen())), child: const Text('View Leads')),
+              OutlinedButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen())), child: const Text('Subscription')),
+              if (snapshot.hasError) Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text('Could not load analytics: ${snapshot.error}', style: const TextStyle(color: Colors.redAccent)),
+              ),
+            ]),
+          );
+        },
       ),
     );
   }

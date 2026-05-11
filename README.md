@@ -1,79 +1,52 @@
-# Lead.AI — Revenue Automation Platform
+## lead-ai-mobile
 
-Production-focused multi-surface SaaS project for AI lead capture, AI agents, and trustworthy automation.
+# Lead.AI — AI Lead Capture Assistant (MVP)
 
-- Web platform (React + TypeScript + Tailwind): `web/`
-- Mobile app (Flutter): `frontend/`
-- AI chat backend (FastAPI): `backend/`
-- Domain: https://www.lead-ai.us
+Production-ready MVP with Flutter frontend + FastAPI backend + Firebase + OpenAI.
 
-## Web Platform (React + TypeScript + Tailwind)
-Includes:
-- Premium landing page
-- AI Marketplace / Explore Models
-- Product details
-- Pricing
-- Dashboard
-- Billing
-- Orders
-- Usage analytics
-- Settings
-- Custom AI Solutions
-- Lead.AI Labs / Research
-- Hugging Face AI Assets
-- Admin panel
+**Description:** AI lead capture assistant mobile app using Flutter, FastAPI, Firebase, and OpenAI.
 
-### Local run
-```bash
-cd web
-npm install
-npm run dev
-```
+**Suggested visibility:** Public or Private.
 
-### Production build
-```bash
-cd web
-npm run build
-npm run preview
-```
+## Architecture
+- `frontend/`: Flutter Android-first app
+- `backend/`: FastAPI API server
 
-### Deploy options
-**Vercel**
-```bash
-npm i -g vercel
-cd web
-vercel
-```
+## Backend Setup
+1. Create virtual env and install deps:
+   ```bash
+   cd backend
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. Add Firebase service account JSON and set env:
+   ```bash
+   cp .env.example .env
+   # edit .env values
+   export $(cat .env | xargs)
+   ```
+3. Run API:
+   ```bash
+   uvicorn app.main:app --reload --port 8000
+   ```
 
-**Netlify**
-```bash
-cd web
-npm run build
-# deploy dist/ via Netlify UI or CLI
-```
+## Frontend Setup
+1. Install Flutter SDK + Android toolchain.
+2. Configure Firebase app (Android package) and place `google-services.json` in `frontend/android/app/`.
+3. Enable Firebase Auth (Email/Password) and Firestore.
+4. Run:
+   ```bash
+   cd frontend
+   flutter pub get
+   flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+   ```
 
-## Backend (FastAPI: AI chat)
-`/chat` uses OpenAI to guide lead capture and return structured lead fields.
+## API Endpoints
+- `POST /chat` — AI step-by-step lead capture state
+- `POST /lead` — Save lead (requires Firebase ID token bearer)
+- `GET /leads` — Get current user leads
 
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# set OPENAI_API_KEY in .env
-uvicorn main:app --reload
-```
-
-## Frontend Mobile (Flutter + Firebase)
-```bash
-cd frontend
-flutter pub get
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
-```
-
-### Firebase setup
-1. Enable **Authentication > Sign-in method > Email/Password**.
-2. Enable **Firestore Database** with **Start in test mode** for MVP.
-3. Register Android app `com.leadai.mobile` and place `google-services.json` in `frontend/android/app/`.
-4. Never commit Firebase private keys or service account secrets.
+## Notes
+- Subscription is UI placeholder only (`Free` vs `Pro`).
+- All secrets must be env vars (`OPENAI_API_KEY`, `FIREBASE_CREDENTIALS`).

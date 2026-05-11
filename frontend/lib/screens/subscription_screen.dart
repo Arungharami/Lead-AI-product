@@ -5,14 +5,13 @@ class SubscriptionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
+    return Scaffold(
+      appBar: AppBar(title: const Text('Subscription')),
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-          Text('Subscription', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-          SizedBox(height: 12),
-          Card(child: ListTile(title: Text('Free'), subtitle: Text('20 leads / month'))),
-          Card(child: ListTile(title: Text('Pro'), subtitle: Text('Unlimited leads (placeholder)'))),
+        child: Column(children: const [
+          Card(child: ListTile(title: Text('Free Plan'), subtitle: Text('20 leads / month'))),
+          Card(child: ListTile(title: Text('Pro Plan'), subtitle: Text('Unlimited leads (UI placeholder)'))),
         ]),
       ),
     );
