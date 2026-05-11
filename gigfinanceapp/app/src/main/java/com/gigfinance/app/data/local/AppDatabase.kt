@@ -10,10 +10,6 @@ import com.gigfinance.app.domain.model.TransactionType
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
-
-    companion object {
-        const val DB_NAME: String = "gig_finance_db"
-    }
 }
 
 class Converters {

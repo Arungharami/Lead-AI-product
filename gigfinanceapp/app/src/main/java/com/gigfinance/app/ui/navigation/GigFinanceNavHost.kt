@@ -7,7 +7,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.gigfinance.app.data.local.DatabaseProvider
+import androidx.room.Room
+import com.gigfinance.app.data.local.AppDatabase
 import com.gigfinance.app.data.repository.TransactionRepository
 import com.gigfinance.app.ui.screens.addtransaction.AddTransactionScreen
 import com.gigfinance.app.ui.screens.addtransaction.AddTransactionViewModel
@@ -24,7 +25,9 @@ fun GigFinanceNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    val db = remember { DatabaseProvider.getDatabase(context) }
+    val db = remember {
+        Room.databaseBuilder(context, AppDatabase::class.java, "gig_finance_db").build()
+    }
     val repository = remember { TransactionRepository(db.transactionDao()) }
 
     NavHost(navController = navController, startDestination = DASHBOARD) {
