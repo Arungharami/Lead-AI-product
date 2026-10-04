@@ -41,6 +41,27 @@ Lead.AI is built to become a practical AI automation platform for businesses tha
 
 ## Current Status
 
+### Run the connected backend
+
+Use the modular API entry point expected by the Flutter client's `state`/`complete`
+chat contract and authenticated `/lead` and `/leads` endpoints:
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.example .env
+# Configure real OpenAI and Firebase credentials in .env; never commit them.
+uvicorn app.main:app --reload
+```
+
+`backend/main.py` is the older, separate chat-only prototype with a different
+response contract. It does not implement the connected mobile lead-storage flow.
+Use `app.main:app` for that flow. `/health` checks API liveness; it does not prove
+provider credentials or Firestore indexes are configured. Invalid bearer tokens
+return 401; missing backend configuration remains an explicit server error.
+
 **Status:** MVP / Production-readiness in progress
 
 The project already includes working architecture for:
@@ -108,3 +129,8 @@ Lead-AI-product/
 ├── MOBILE_PRODUCTION_ROADMAP.md
 ├── LICENSE
 └── README.md
+```
+
+## Engineering review
+
+See [the October 4 correctness review](docs/ENGINEERING_REVIEW_2026-10-04.md) for repairs, exact verification results, and the next implementation work.

@@ -44,7 +44,7 @@ def chat(req: ChatRequest):
         try:
             raw_output = completion.choices[0].message.content
             parsed = json.loads(raw_output)
-        except (IndexError, AttributeError, json.JSONDecodeError) as exc:
+        except (IndexError, AttributeError, TypeError, json.JSONDecodeError) as exc:
             raise HTTPException(status_code=502, detail="Unexpected OpenAI response") from exc
 
         if not isinstance(parsed, dict):
