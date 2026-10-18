@@ -1,5 +1,11 @@
 # Lead.AI Product Platform
 
+## Start here
+
+Use the connected backend instructions below and [deployment guide](DEPLOYMENT.md). This is an evolving MVP; provider-backed workflows require owner-managed credentials.
+
+**Help improve this project:** [Contribution guide](CONTRIBUTING.md) · [Issues](https://github.com/Arungharami/Lead-AI-product/issues)
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
 ![Flutter](https://img.shields.io/badge/Mobile-Flutter-02569B)
